@@ -10,7 +10,7 @@ class Maison (Process):
 		super().__init__()
 		self.id = id
 		self.energie_cons = 60
-		self.energie_prod = 100
+		self.energie_prod = 60
 		self.solde = INFINI
 		self.b = b
 		self.temperature = temperature
@@ -19,15 +19,15 @@ class Maison (Process):
 	#Changer la valeur demandé en fonction de self.energie_cons et self.energie_prod
 	def achat(self,mq):
 		pid = str(os.getpid()).encode()
-		message = str(50).encode()
+		message = str(self.energie_cons-self.energie_prod).encode()
 		slash = "/".encode()
 		m = message + slash + pid
 		
 		mq.send(m, type = 1)
 		
-		prix, t = mq.receive(type = os.getpid())
+		perte, t = mq.receive(type = os.getpid())
 		if (t == os.getpid()):
-			print("Le prix de l'énergie est:", int(prix.decode()))
+			print("La maison", self.id,"a perdu", int(perte.decode()))
 			
 	def vente(self,mq):
 		pid = str(os.getpid()).encode()
@@ -160,6 +160,9 @@ class Maison (Process):
 			#Vente du surplus d'énergie
 			if (self.energie_cons < self.energie_prod):
 				self.vente(mq)
+			#Achat de l'énergie nécessaire
+			elif (self.energie_cons > self.energie_prod):
+				self.achat(mq)
 			
 
 			

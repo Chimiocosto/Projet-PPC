@@ -2,7 +2,6 @@ from multiprocessing import *
 import random
 import time
 import sysv_ipc
-import concurrent.futures
 import os
 from marche import *
 from home import *
@@ -25,6 +24,9 @@ if __name__ == "__main__":
 	
 	market = Marche()
 	market.start()
+	
+	#Pour que la message queue ait bien le temps d'être créé par le marché
+	time.sleep(1)
 	
 	lst_process = []
 	
