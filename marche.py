@@ -1,12 +1,8 @@
-from home import *
-from multiprocessing import *
-import sysv_ipc
-import concurrent.futures
+from main import *
+from external import *
 
 key = 10
 INFINI = 9999999
-
-
 
 
 class Marche (Process):
@@ -28,9 +24,22 @@ class Marche (Process):
 		pid = int(message[1])
 		
 		mq.send(str(self.prix_energie*int(message[0])).encode(), type = pid)
+		
+	
+	def handler(self, sig, frame):
+		print("coucou je suis la fonction")
+		if (sig == signal.SIGUSR1):
+			print("Le signal fonctionne")
+		elif (sig == signal.SIGUSR2):
+			print("Le signal fonctionne")
+			
 
 	def run(self):
 		print("C'est le matin, le marché ouvre")
+		
+		signal.signal(signal.SIGUSR1, Marche.handler)
+
+		
 		
 		mq = sysv_ipc.MessageQueue(key, sysv_ipc.IPC_CREX)
 		
@@ -51,6 +60,8 @@ class Marche (Process):
 					#print("Je suis bien dans la condition t = 3 ")
 					mq.remove()
 					print("Le marché ferme, fin de la simulation")  
-					break    
+					break 
+					
+		
 					     
-						
+		

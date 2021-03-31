@@ -1,13 +1,4 @@
-from marche import *
 from main import *
-from multiprocessing import *
-import random
-import sys
-import sysv_ipc
-import concurrent.futures
-import time
-import os
-
 
 key = 10
 NBR_JOURNEE = 5
@@ -48,11 +39,11 @@ class Maison (Process):
 		
 		recette, t = mq.receive(type = os.getpid())
 		if (t == os.getpid()):
-			print("La maisons", self.id,"a gagné", int(recette.decode()))
+			print("La maison", self.id,"a gagné", int(recette.decode()))
 			
 	#Le type 1 : maison à grosse consommation
 	def type_1(self, current_day):
-		if (current_day ==1):
+		if (current_day == 0):
 			with self.temperature.get_lock():
 				if (self.temperature[current_day] <= 5):
 					self.energie_cons += 20
@@ -72,7 +63,7 @@ class Maison (Process):
 						self.energie_cons -= 10
 					elif (self.temperature[current_day-1] <= 5):
 						self.energie_cons -= 20
-				#Condition si la journée considérée à une température tempéré
+				#Condition si la journée considérée à une température moyenne
 				elif(self.temperature[current_day] >= 6 and self.temperature[current_day] <= 24):
 					if (self.temperature[current_day-1] <= 5):
 						self.energie_cons -= 10
@@ -82,7 +73,7 @@ class Maison (Process):
 		
 	#Le type 2 : maison à la consommation modérée
 	def type_2(self, current_day):
-		if (current_day == 1):
+		if (current_day == 0):
 			with self.temperature.get_lock():
 				if (self.temperature[current_day] <= 0):
 					self.energie_cons += 15
@@ -102,7 +93,7 @@ class Maison (Process):
 						self.energie_cons -= 15
 					elif (self.temperature[current_day-1] <= 0):
 						self.energie_cons -= 30
-				#Condition si la journée considérée à une température tempéré
+				#Condition si la journée considérée à une température moyenne
 				elif(self.temperature[current_day] >= 1 and self.temperature[current_day] <= 19):
 					if (self.temperature[current_day-1] <= 0):
 						self.energie_cons -= 15
@@ -113,7 +104,7 @@ class Maison (Process):
 
 	#Le type 3 : maison peu consommatrice
 	def type_3(self, current_day):
-		if (current_day == 1):
+		if (current_day == 0):
 			with self.temperature.get_lock():
 				if (self.temperature[current_day] <= -5):
 					self.energie_cons += 10
@@ -133,30 +124,29 @@ class Maison (Process):
 						self.energie_cons -= 20
 					elif (self.temperature[current_day-1] <= -5):
 						self.energie_cons -= 40
-				#Condition si la journée considérée à une température tempéré
+				#Condition si la journée considérée à une température moyenne
 				elif(self.temperature[current_day] >= -4 and self.temperature[current_day] <= 14):
 					if (self.temperature[current_day-1] <= -5):
 						self.energie_cons -= 20
 					elif (self.temperature[current_day-1] >= 15):
 						self.energie_cons += 10
 					
-				
-				
-		
+					
 	def run(self):
 		current_day = 0
 		print("Mon ID est le", self.id, "et mon type de maison est:", self.m_type)
-		
+		print("Le nombre de journée pour cette simulation est",NBR_JOURNEE)
 		
 		while (current_day < NBR_JOURNEE):
-			print("Le nombre de journée pour cette simulation est",NBR_JOURNEE)
 			mq = sysv_ipc.MessageQueue(key)
+			
 			with self.temperature.get_lock():
 				print("Aujourd'hui la temperature est de:", self.temperature[current_day])
 				if (current_day > 0):
 					print("La température le jour d'avant était de :", self.temperature[current_day-1])
 				print(self.temperature[:])
 				
+			#Mis à jour de la consommation d'énergie quotidienne
 			if (self.m_type == 1):
 				self.type_1(current_day)
 			elif (self.m_type == 2):
@@ -166,14 +156,16 @@ class Maison (Process):
 				
 			print("Je consomme:",self.energie_cons,"d'énergie car je suis de type", self.m_type)
 		
-			if (self.id == 0):
+		
+			#Vente du surplus d'énergie
+			if (self.energie_cons < self.energie_prod):
 				self.vente(mq)
 			
-				
-			
-			print("Je suis une maison de type: ",self.m_type)
+
 			
 			time.sleep(random.randint(2, 5))
+			
+			print("--------------\n\n")
 			self.b.wait()
 			print("Fin de la journée", current_day,"pour la maison",self.id)
 			print("--------------\n\n")
